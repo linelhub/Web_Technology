@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Search Game</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: #f4f6fc;
+            margin: 0;
+            padding: 30px 15px;
+        }
+
+        h1 {
+            color: #3155d9;
+        }
+
+        .game-container {
+            max-width: 550px;
+            margin: auto;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(12, 34px);
+            gap: 3px;
+            justify-content: center;
+            margin: 25px auto;
+        }
+
+        .cell {
+            width: 34px;
+            height: 34px;
+            border: 1px solid #bbb;
+            background: white;
+            border-radius: 4px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .cell:hover {
+            background: #dce5ff;
+        }
+
+        .selected {
+            background: #ffcf70;
+        }
+
+        .found {
+            background: #4CAF50;
+            color: white;
+        }
+
+        #result {
+            font-weight: bold;
+            margin: 15px;
+            color: #3155d9;
+        }
+
+        #score {
+            color: #219653;
+            font-weight: bold;
+        }
+
+        button.reset {
+            background: #3155d9;
+            color: white;
+            border: none;
+            padding: 12px 22px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        button.reset:hover {
+            background: #172033;
+        }
+
+        @media (max-width: 480px) {
+            #grid {
+                grid-template-columns: repeat(12, 1fr);
+                gap: 2px;
+            }
+
+            .cell {
+                width: 100%;
+                aspect-ratio: 1;
+                height: auto;
+                font-size: 12px;
+            }
+
+            .game-container {
+                padding: 15px 8px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="game-container">
+
+        <h1>Word Search Game</h1>
+
+        <p>Find the hidden word in the grid!</p>
+
+        <p><strong>Hidden word: EXAMPLEWORD</strong></p>
+
+        <p>Click the first letter, then the last letter.</p>
+
+        <div id="grid"></div>
+
+        <p>Your score: <span id="score">0</span></p>
+
+        <p id="result">Good luck! Find the hidden word.</p>
+
+        <button class="reset" onclick="startGame()">
+            Restart Game
+        </button>
+
+    </div>
+
+    <script>
+
+        const gridSize = 12;
+        const hiddenWord = "EXAMPLEWORD";
+
+        let grid = [];
+        let score = 0;
+        let firstCell = null;
+        let wordFound = false;
+
+        // Generate the game grid
+        function generateGrid() {
+
+            grid = Array.from(
+                { length: gridSize },
+                () => Array(gridSize).fill("")
+            );
+
+            const directions = [
+                [0, 1],
+                [1, 0],
+                [1, 1],
+                [-1, 1]
+            ];
+
+            let row, col, dr, dc;
+            let placed = false;
+
+            // Find a suitable position for the word
+            while (!placed) {
+
+                [dr, dc] =
+                    directions[Math.floor(Math.random() * directions.length)];
+
+                row = Math.floor(Math.random() * gridSize);
+                col = Math.floor(Math.random() * gridSize);
+
+                const endRow = row + (hiddenWord.length - 1) * dr;
+                const endCol = col + (hiddenWord.length - 1) * dc;
+
+                if (
+                    endRow >= 0 && endRow < gridSize &&
+                    endCol >= 0 && endCol < gridSize
+                ) {
+                    placed = true;
+                }
+            }
+
+            // Insert the hidden word
+            for (let i = 0; i < hiddenWord.length; i++) {
+
+                grid[row + i * dr][col + i * dc] =
+                    hiddenWord[i];
+
+            }
+
+            // Fill empty cells with random letters
+            const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+            for (let i = 0; i < gridSize; i++) {
+
+                for (let j = 0; j < gridSize; j++) {
+
+                    if (grid[i][j] === "") {
+
+                        grid[i][j] =
+                            letters[Math.floor(Math.random() * letters.length)];
+
+                    }
+                }
+            }
+        }
+
+        // Display the grid
+        function drawGrid() {
+
+            const gridDiv = document.getElementById("grid");
+
+            // Clear the previous grid
+            gridDiv.innerHTML = "";
+
+            grid.forEach((row, i) => {
+
+                row.forEach((letter, j) => {
+
+                    const cell = document.createElement("button");
+
+                    cell.type = "button";
+                    cell.className = "cell";
+                    cell.textContent = letter;
+
+                    cell.setAttribute(
+                        "aria-label",
+                        `Row ${i + 1}, column ${j + 1}, letter ${letter}`
+                    );
+
+                    cell.addEventListener("click", () => {
+                        selectCell(i, j);
+                    });
+
+                    gridDiv.appendChild(cell);
+
+                });
+
+            });
+        }
+
+        // Handle letter selection
+        function selectCell(row, col) {
+
+            if (wordFound) return;
+
+            const cells = document.querySelectorAll(".cell");
+
+            const index = row * gridSize + col;
+
+            // First click selects the starting letter
+            if (firstCell === null) {
+
+                firstCell = { row, col };
+
+                cells[index].classList.add("selected");
+
+                document.getElementById("result").textContent =
+                    "Now select the last letter.";
+
+                return;
+            }
+
+            // Second click selects the ending letter
+            const start = firstCell;
+            const end = { row, col };
+
+            const rowDiff = end.row - start.row;
+            const colDiff = end.col - start.col;
+
+            let stepRow = 0;
+            let stepCol = 0;
+
+            if (rowDiff === 0 && colDiff !== 0) {
+                stepCol = Math.sign(colDiff);
+            }
+            else if (colDiff === 0 && rowDiff !== 0) {
+                stepRow = Math.sign(rowDiff);
+            }
+            else if (Math.abs(rowDiff) === Math.abs(colDiff)) {
+                stepRow = Math.sign(rowDiff);
+                stepCol = Math.sign(colDiff);
+            }
+
+            let selectedLetters = "";
+            let selectedIndexes = [];
+
+            if (stepRow !== 0 || stepCol !== 0) {
+
+                const length = Math.max(
+                    Math.abs(rowDiff),
+                    Math.abs(colDiff)
+                ) + 1;
+
+                for (let i = 0; i < length; i++) {
+
+                    const r = start.row + i * stepRow;
+                    const c = start.col + i * stepCol;
+
+                    selectedLetters += grid[r][c];
+
+                    selectedIndexes.push(r * gridSize + c);
+                }
+            }
+
+            // Check the selected word
+            if (
+                selectedLetters === hiddenWord ||
+                selectedLetters === hiddenWord.split("").reverse().join("")
+            ) {
+
+                score += 10;
+
+                document.getElementById("score").textContent = score;
+
+                selectedIndexes.forEach(index => {
+                    cells[index].classList.add("found");
+                });
+
+                document.getElementById("result").textContent =
+                    "Congratulations! You found the word!";
+
+                wordFound = true;
+
+            } else {
+
+                document.getElementById("result").textContent =
+                    "Incorrect selection. Try again!";
+
+                // Clear temporary selection
+                cells.forEach(cell => {
+                    cell.classList.remove("selected");
+                });
+            }
+
+            firstCell = null;
+        }
+
+        // Start or restart the game
+        function startGame() {
+
+            score = 0;
+            firstCell = null;
+            wordFound = false;
+
+            document.getElementById("score").textContent = score;
+
+            document.getElementById("result").textContent =
+                "Good luck! Find the hidden word.";
+
+            generateGrid();
+            drawGrid();
+        }
+
+        // Start the game when the page loads
+        startGame();
+
+    </script>
+
+</body>
+</html>
