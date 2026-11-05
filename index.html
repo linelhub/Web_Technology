@@ -1,361 +1,480 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Word Search Game</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word Search Challenge</title>
 
-    <style>
-        * {
-            box-sizing: border-box;
-        }
+<style>
+* {
+    box-sizing: border-box;
+}
 
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background: #f4f6fc;
-            margin: 0;
-            padding: 30px 15px;
-        }
+body {
+    font-family: Arial, sans-serif;
+    background: #f1f4fa;
+    text-align: center;
+    padding: 20px;
+    color: #172033;
+}
 
-        h1 {
-            color: #3155d9;
-        }
+h1 {
+    color: #3155d9;
+}
 
-        .game-container {
-            max-width: 550px;
-            margin: auto;
-            background: white;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-        }
+.levels {
+    margin: 20px;
+}
 
-        #grid {
-            display: grid;
-            grid-template-columns: repeat(12, 34px);
-            gap: 3px;
-            justify-content: center;
-            margin: 25px auto;
-        }
+.levels button, .action-btn {
+    padding: 10px 16px;
+    margin: 5px;
+    border: none;
+    border-radius: 6px;
+    background: #3155d9;
+    color: white;
+    cursor: pointer;
+}
 
-        .cell {
-            width: 34px;
-            height: 34px;
-            border: 1px solid #bbb;
-            background: white;
-            border-radius: 4px;
-            font-size: 15px;
-            font-weight: bold;
-            cursor: pointer;
-        }
+.levels button:disabled {
+    background: #aaa;
+    cursor: not-allowed;
+}
 
-        .cell:hover {
-            background: #dce5ff;
-        }
+.levels button.active {
+    background: #172033;
+}
 
-        .selected {
-            background: #ffcf70;
-        }
+#gameInfo {
+    margin: 15px;
+    font-weight: bold;
+}
 
-        .found {
-            background: #4CAF50;
-            color: white;
-        }
+#wordList {
+    margin: 15px auto;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    max-width: 500px;
+}
 
-        #result {
-            font-weight: bold;
-            margin: 15px;
-            color: #3155d9;
-        }
+.word {
+    background: white;
+    padding: 8px 12px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
 
-        #score {
-            color: #219653;
-            font-weight: bold;
-        }
+.word.found {
+    background: #d4edda;
+    color: #155724;
+    text-decoration: line-through;
+}
 
-        button.reset {
-            background: #3155d9;
-            color: white;
-            border: none;
-            padding: 12px 22px;
-            border-radius: 7px;
-            cursor: pointer;
-            font-size: 15px;
-        }
+#grid {
+    display: grid;
+    gap: 4px;
+    justify-content: center;
+    margin: 20px auto;
+    width: fit-content;
+}
 
-        button.reset:hover {
-            background: #172033;
-        }
+.cell {
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border: 1px solid #ccd3e0;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    user-select: none;
+}
 
-        @media (max-width: 480px) {
-            #grid {
-                grid-template-columns: repeat(12, 1fr);
-                gap: 2px;
-            }
+.cell.selected {
+    background: #ffe29a;
+}
 
-            .cell {
-                width: 100%;
-                aspect-ratio: 1;
-                height: auto;
-                font-size: 12px;
-            }
+.cell.found {
+    background: #4caf50;
+    color: white;
+}
 
-            .game-container {
-                padding: 15px 8px;
-            }
-        }
-    </style>
+#message {
+    font-weight: bold;
+    margin: 15px;
+}
+
+#nextLevel {
+    display: none;
+    background: #198754;
+}
+
+@media (max-width: 500px) {
+    .cell {
+        width: 27px;
+        height: 27px;
+        font-size: 12px;
+    }
+
+    #grid {
+        gap: 2px;
+    }
+}
+</style>
 </head>
 
 <body>
 
-    <div class="game-container">
+<h1>Word Search Challenge</h1>
+<p>Find all the hidden words to unlock the next level!</p>
 
-        <h1>Word Search Game</h1>
+<div class="levels">
+    <button id="level1" onclick="startLevel(0)">Level 1</button>
+    <button id="level2" onclick="startLevel(1)" disabled>Level 2 🔒</button>
+    <button id="level3" onclick="startLevel(2)" disabled>Level 3 🔒</button>
+</div>
 
-        <p>Find the hidden word in the grid!</p>
+<div id="gameInfo">
+    <p id="levelTitle">Level 1: Easy</p>
+    <p id="score">Score: 0</p>
+    <p id="progress">Words found: 0/4</p>
+</div>
 
-        <p><strong>Hidden word: EXAMPLEWORD</strong></p>
+<h3>Find these words:</h3>
+<div id="wordList"></div>
 
-        <p>Click the first letter, then the last letter.</p>
+<div id="grid"></div>
 
-        <div id="grid"></div>
+<p id="message">Select the first and last letters of a word.</p>
 
-        <p>Your score: <span id="score">0</span></p>
+<button class="action-btn" onclick="restartLevel()">Restart Level</button>
+<button class="action-btn" id="nextLevel" onclick="goToNextLevel()">Next Level →</button>
 
-        <p id="result">Good luck! Find the hidden word.</p>
+<script>
+const levels = [
+    {
+        name: "Easy",
+        size: 10,
+        words: ["HTML", "CODE", "WEB", "CLOUD"]
+    },
+    {
+        name: "Medium",
+        size: 12,
+        words: ["JAVASCRIPT", "SECURITY", "WEBSITE", "BROWSER", "PYTHON", "DESIGN"]
+    },
+    {
+        name: "Hard",
+        size: 14,
+        words: [
+            "DEVELOPMENT",
+            "DATABASE",
+            "NETWORK",
+            "CYBERSECURITY",
+            "PROGRAMMING",
+            "ALGORITHM",
+            "COMPUTING",
+            "FRAMEWORK"
+        ]
+    }
+];
 
-        <button class="reset" onclick="startGame()">
-            Restart Game
-        </button>
+let currentLevel = 0;
+let unlockedLevel = 0;
+let grid = [];
+let placedWords = {};
+let foundWords = [];
+let score = 0;
+let firstCell = null;
 
-    </div>
+const directions = [
+    [0, 1], [0, -1],
+    [1, 0], [-1, 0],
+    [1, 1], [-1, -1],
+    [1, -1], [-1, 1]
+];
 
-    <script>
+function startLevel(level) {
+    if (level > unlockedLevel) return;
 
-        const gridSize = 12;
-        const hiddenWord = "EXAMPLEWORD";
+    currentLevel = level;
+    score = 0;
+    foundWords = [];
+    firstCell = null;
 
-        let grid = [];
-        let score = 0;
-        let firstCell = null;
-        let wordFound = false;
+    const settings = levels[currentLevel];
 
-        // Generate the game grid
-        function generateGrid() {
+    document.getElementById("levelTitle").textContent =
+        `Level ${level + 1}: ${settings.name}`;
 
-            grid = Array.from(
-                { length: gridSize },
-                () => Array(gridSize).fill("")
-            );
+    document.getElementById("message").textContent =
+        "Find all the hidden words!";
 
-            const directions = [
-                [0, 1],
-                [1, 0],
-                [1, 1],
-                [-1, 1]
-            ];
+    document.getElementById("nextLevel").style.display = "none";
 
-            let row, col, dr, dc;
-            let placed = false;
+    updateLevelButtons();
+    generateGrid();
+    displayWords();
+    updateInfo();
+}
 
-            // Find a suitable position for the word
-            while (!placed) {
+function updateLevelButtons() {
+    for (let i = 0; i < levels.length; i++) {
+        const button = document.getElementById(`level${i + 1}`);
+        button.disabled = i > unlockedLevel;
+        button.classList.toggle("active", i === currentLevel);
 
-                [dr, dc] =
-                    directions[Math.floor(Math.random() * directions.length)];
+        button.textContent = i > unlockedLevel
+            ? `Level ${i + 1} 🔒`
+            : `Level ${i + 1}`;
+    }
+}
 
-                row = Math.floor(Math.random() * gridSize);
-                col = Math.floor(Math.random() * gridSize);
+function generateGrid() {
+    const size = levels[currentLevel].size;
+    const words = levels[currentLevel].words;
 
-                const endRow = row + (hiddenWord.length - 1) * dr;
-                const endCol = col + (hiddenWord.length - 1) * dc;
+    grid = Array.from({ length: size }, () =>
+        Array(size).fill("")
+    );
 
-                if (
-                    endRow >= 0 && endRow < gridSize &&
-                    endCol >= 0 && endCol < gridSize
-                ) {
-                    placed = true;
-                }
-            }
+    placedWords = {};
 
-            // Insert the hidden word
-            for (let i = 0; i < hiddenWord.length; i++) {
+    // Place each word in the grid
+    words.forEach(word => {
+        let placed = false;
+        let attempts = 0;
 
-                grid[row + i * dr][col + i * dc] =
-                    hiddenWord[i];
+        while (!placed && attempts < 3000) {
+            attempts++;
 
-            }
+            const [dr, dc] =
+                directions[Math.floor(Math.random() * directions.length)];
 
-            // Fill empty cells with random letters
-            const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            const row = Math.floor(Math.random() * size);
+            const col = Math.floor(Math.random() * size);
 
-            for (let i = 0; i < gridSize; i++) {
+            const endRow = row + dr * (word.length - 1);
+            const endCol = col + dc * (word.length - 1);
 
-                for (let j = 0; j < gridSize; j++) {
-
-                    if (grid[i][j] === "") {
-
-                        grid[i][j] =
-                            letters[Math.floor(Math.random() * letters.length)];
-
-                    }
-                }
-            }
-        }
-
-        // Display the grid
-        function drawGrid() {
-
-            const gridDiv = document.getElementById("grid");
-
-            // Clear the previous grid
-            gridDiv.innerHTML = "";
-
-            grid.forEach((row, i) => {
-
-                row.forEach((letter, j) => {
-
-                    const cell = document.createElement("button");
-
-                    cell.type = "button";
-                    cell.className = "cell";
-                    cell.textContent = letter;
-
-                    cell.setAttribute(
-                        "aria-label",
-                        `Row ${i + 1}, column ${j + 1}, letter ${letter}`
-                    );
-
-                    cell.addEventListener("click", () => {
-                        selectCell(i, j);
-                    });
-
-                    gridDiv.appendChild(cell);
-
-                });
-
-            });
-        }
-
-        // Handle letter selection
-        function selectCell(row, col) {
-
-            if (wordFound) return;
-
-            const cells = document.querySelectorAll(".cell");
-
-            const index = row * gridSize + col;
-
-            // First click selects the starting letter
-            if (firstCell === null) {
-
-                firstCell = { row, col };
-
-                cells[index].classList.add("selected");
-
-                document.getElementById("result").textContent =
-                    "Now select the last letter.";
-
-                return;
-            }
-
-            // Second click selects the ending letter
-            const start = firstCell;
-            const end = { row, col };
-
-            const rowDiff = end.row - start.row;
-            const colDiff = end.col - start.col;
-
-            let stepRow = 0;
-            let stepCol = 0;
-
-            if (rowDiff === 0 && colDiff !== 0) {
-                stepCol = Math.sign(colDiff);
-            }
-            else if (colDiff === 0 && rowDiff !== 0) {
-                stepRow = Math.sign(rowDiff);
-            }
-            else if (Math.abs(rowDiff) === Math.abs(colDiff)) {
-                stepRow = Math.sign(rowDiff);
-                stepCol = Math.sign(colDiff);
-            }
-
-            let selectedLetters = "";
-            let selectedIndexes = [];
-
-            if (stepRow !== 0 || stepCol !== 0) {
-
-                const length = Math.max(
-                    Math.abs(rowDiff),
-                    Math.abs(colDiff)
-                ) + 1;
-
-                for (let i = 0; i < length; i++) {
-
-                    const r = start.row + i * stepRow;
-                    const c = start.col + i * stepCol;
-
-                    selectedLetters += grid[r][c];
-
-                    selectedIndexes.push(r * gridSize + c);
-                }
-            }
-
-            // Check the selected word
             if (
-                selectedLetters === hiddenWord ||
-                selectedLetters === hiddenWord.split("").reverse().join("")
-            ) {
+                endRow < 0 || endRow >= size ||
+                endCol < 0 || endCol >= size
+            ) continue;
 
-                score += 10;
+            let canPlace = true;
 
-                document.getElementById("score").textContent = score;
+            for (let i = 0; i < word.length; i++) {
+                const r = row + dr * i;
+                const c = col + dc * i;
 
-                selectedIndexes.forEach(index => {
-                    cells[index].classList.add("found");
-                });
-
-                document.getElementById("result").textContent =
-                    "Congratulations! You found the word!";
-
-                wordFound = true;
-
-            } else {
-
-                document.getElementById("result").textContent =
-                    "Incorrect selection. Try again!";
-
-                // Clear temporary selection
-                cells.forEach(cell => {
-                    cell.classList.remove("selected");
-                });
+                if (grid[r][c] !== "" && grid[r][c] !== word[i]) {
+                    canPlace = false;
+                    break;
+                }
             }
 
-            firstCell = null;
+            if (canPlace) {
+                const positions = [];
+
+                for (let i = 0; i < word.length; i++) {
+                    const r = row + dr * i;
+                    const c = col + dc * i;
+
+                    grid[r][c] = word[i];
+                    positions.push([r, c]);
+                }
+
+                placedWords[word] = positions;
+                placed = true;
+            }
         }
 
-        // Start or restart the game
-        function startGame() {
-
-            score = 0;
-            firstCell = null;
-            wordFound = false;
-
-            document.getElementById("score").textContent = score;
-
-            document.getElementById("result").textContent =
-                "Good luck! Find the hidden word.";
-
-            generateGrid();
-            drawGrid();
+        if (!placed) {
+            throw new Error("Could not place word: " + word);
         }
+    });
 
-        // Start the game when the page loads
-        startGame();
+    // Fill empty cells with random letters
+    for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+            if (grid[r][c] === "") {
+                grid[r][c] =
+                    String.fromCharCode(65 + Math.floor(Math.random() * 26));
+            }
+        }
+    }
 
-    </script>
+    drawGrid();
+}
+
+function drawGrid() {
+    const gridElement = document.getElementById("grid");
+    const size = levels[currentLevel].size;
+
+    gridElement.innerHTML = "";
+    gridElement.style.gridTemplateColumns =
+        `repeat(${size}, 34px)`;
+
+    grid.forEach((row, r) => {
+        row.forEach((letter, c) => {
+            const cell = document.createElement("div");
+
+            cell.className = "cell";
+            cell.textContent = letter;
+            cell.dataset.row = r;
+            cell.dataset.col = c;
+
+            cell.addEventListener("click", () => selectCell(r, c));
+
+            gridElement.appendChild(cell);
+        });
+    });
+}
+
+function displayWords() {
+    const wordList = document.getElementById("wordList");
+    wordList.innerHTML = "";
+
+    levels[currentLevel].words.forEach(word => {
+        const item = document.createElement("span");
+
+        item.className = "word";
+        item.id = `word-${word}`;
+        item.textContent = word;
+
+        wordList.appendChild(item);
+    });
+}
+
+function selectCell(row, col) {
+    if (document.getElementById("nextLevel").style.display === "inline-block") {
+        return;
+    }
+
+    if (!firstCell) {
+        firstCell = [row, col];
+
+        document.querySelectorAll(".cell").forEach(cell => {
+            cell.classList.remove("selected");
+        });
+
+        getCell(row, col).classList.add("selected");
+        return;
+    }
+
+    const [startRow, startCol] = firstCell;
+    const rowDiff = row - startRow;
+    const colDiff = col - startCol;
+
+    const steps = Math.max(Math.abs(rowDiff), Math.abs(colDiff));
+
+    if (
+        steps === 0 ||
+        !(rowDiff === 0 || colDiff === 0 ||
+          Math.abs(rowDiff) === Math.abs(colDiff))
+    ) {
+        firstCell = null;
+        clearSelection();
+        return;
+    }
+
+    const stepRow = rowDiff / steps;
+    const stepCol = colDiff / steps;
+
+    let selected = "";
+
+    for (let i = 0; i <= steps; i++) {
+        selected += grid[startRow + stepRow * i][startCol + stepCol * i];
+    }
+
+    const reversed = selected.split("").reverse().join("");
+
+    const matchedWord = levels[currentLevel].words.find(word =>
+        (word === selected || word === reversed) &&
+        !foundWords.includes(word)
+    );
+
+    if (matchedWord) {
+        foundWords.push(matchedWord);
+        score += 10;
+
+        placedWords[matchedWord].forEach(([r, c]) => {
+            getCell(r, c).classList.add("found");
+        });
+
+        document.getElementById(`word-${matchedWord}`)
+            .classList.add("found");
+
+        document.getElementById("message").textContent =
+            `Correct! You found ${matchedWord}.`;
+
+        updateInfo();
+
+        if (foundWords.length === levels[currentLevel].words.length) {
+            completeLevel();
+        }
+    } else {
+        document.getElementById("message").textContent =
+            "Not a hidden word. Try again!";
+    }
+
+    firstCell = null;
+    clearSelection();
+}
+
+function getCell(row, col) {
+    return document.querySelector(
+        `.cell[data-row="${row}"][data-col="${col}"]`
+    );
+}
+
+function clearSelection() {
+    document.querySelectorAll(".cell").forEach(cell => {
+        cell.classList.remove("selected");
+    });
+}
+
+function updateInfo() {
+    document.getElementById("score").textContent =
+        `Score: ${score}`;
+
+    document.getElementById("progress").textContent =
+        `Words found: ${foundWords.length}/${levels[currentLevel].words.length}`;
+}
+
+function completeLevel() {
+    document.getElementById("message").textContent =
+        `Congratulations! You completed Level ${currentLevel + 1}!`;
+
+    if (currentLevel < levels.length - 1) {
+        unlockedLevel = Math.max(unlockedLevel, currentLevel + 1);
+        updateLevelButtons();
+
+        document.getElementById("nextLevel").style.display =
+            "inline-block";
+    } else {
+        document.getElementById("message").textContent =
+            "Amazing! You completed all three levels!";
+    }
+}
+
+function goToNextLevel() {
+    if (currentLevel < levels.length - 1) {
+        startLevel(currentLevel + 1);
+    }
+}
+
+function restartLevel() {
+    startLevel(currentLevel);
+}
+
+// Start the game
+startLevel(0);
+</script>
 
 </body>
 </html>
